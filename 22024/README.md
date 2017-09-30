@@ -1,5 +1,5 @@
 # Repeat Steps
-
+- Clone this repository
 - Install cygwin (any version)
 - Open mintty terminal (the standard bash one)
 	```
