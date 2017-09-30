@@ -1,6 +1,8 @@
 # Repeat Steps
 - Clone this repository
 - Install cygwin (any version)
+   - https://cygwin.com/setup-x86_64.exe
+   - The usual next, next, next, next, next, next, ..., 
 - Open mintty terminal (the standard bash one) and cd to your gopath
 	```
     cd /cygdrive/c/g/src/github.com/as/goissues/22024
