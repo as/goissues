@@ -27,7 +27,7 @@ stage           Go repository target staging area
 stage\go        Go repository 
 stage\cygwinok  A sanity check that uses the honor system to ensure you installed cygwin
 pv.go           A port of pipeviewer affected by issue22024 
-test            A while loop that sources the faulty command on each iteration of the bisect
+test            A faulty construction that generates the issue; run by a while loop
 has22024.bat    A pass/fail oracle for the issue, for git bisect
 main.bat        Driver that clones the git repo and starts bisecting
 ```
