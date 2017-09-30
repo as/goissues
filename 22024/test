@@ -1,0 +1,1 @@
+(invalid;invalid)|./stage/pv.exe && echo fixed > stage/fixed
