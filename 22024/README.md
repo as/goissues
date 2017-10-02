@@ -1,6 +1,8 @@
 # Repeat Steps
 - Clone this repository
 - Install cygwin (any version)
+   - https://cygwin.com/setup-x86_64.exe
+   - The usual next, next, next, next, next, next, ..., 
 - Open mintty terminal (the standard bash one) and cd to your gopath
 	```
     cd /cygdrive/c/g/src/github.com/as/goissues/22024
@@ -25,7 +27,7 @@ stage           Go repository target staging area
 stage\go        Go repository 
 stage\cygwinok  A sanity check that uses the honor system to ensure you installed cygwin
 pv.go           A port of pipeviewer affected by issue22024 
-test            A while loop that sources the faulty command on each iteration of the bisect
+test            A faulty construction that generates the issue; run by a while loop
 has22024.bat    A pass/fail oracle for the issue, for git bisect
 main.bat        Driver that clones the git repo and starts bisecting
 ```
