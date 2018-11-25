@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/bits"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ const (
 )
 
 func hammer(c Cache, done chan bool) {
-	r := newXor(Size - 1)
+	r := newRng(Size)
 	for {
 		select {
 		case <-done:
@@ -29,7 +30,7 @@ func hammer(c Cache, done chan bool) {
 	}
 }
 func getter(c Cache, done chan bool) {
-	r := newXor(Size - 1)
+	r := newRng(Size)
 	for {
 		select {
 		case <-done:
@@ -84,12 +85,12 @@ func BenchmarkMap(b *testing.B) {
 
 	for w := 0; w <= maxWriter; w++ {
 		for nm, new := range map[string]func(int) Cache{
-			"Lock": newLC,
 			"Sync": newSC,
+			"Lock": newLC,
 		} {
 			// Iterate in series and randomly
 			for _, ctrFunc := range []func(uint32) seq{
-				newCtr, newXor, // newMem,
+				newCtr, newRng, // newMem,
 			} {
 				c := new(Size)
 				done := make(chan bool)
@@ -97,18 +98,20 @@ func BenchmarkMap(b *testing.B) {
 					// Mutate the cache as dictated by the outermost loop
 					go hammer(c, done)
 
-					// Add 10 readers for every writer
+					// Add 8 readers for every writer
 					for i := 0; i < 10; i++ {
 						go getter(c, done)
 					}
 				}
+				// Add 1 more reader
+				go getter(c, done)
 
 				// Start with a narrow access window, expand the mask
 				// outward until the Get can stratify the entire map. Early
 				// iterations will be localized and expand as 'e' grows
 				for e := uint(0); e <= E; e += k {
-					ctr := ctrFunc((1 << e) - 1)
-					b.Run(fmt.Sprintf("%dW%dR/%s/%s", w, w*10+1, nm, ctr), func(b *testing.B) {
+					ctr := ctrFunc((1 << e))
+					b.Run(fmt.Sprintf("%dW%dR/%s/%s", w, w*8+2, nm, ctr), func(b *testing.B) {
 						for n := 0; n < b.N; n++ {
 							c.Get(ctr.next())
 						}
@@ -123,7 +126,7 @@ func BenchmarkMap(b *testing.B) {
 }
 
 func init() {
-	x := newXor(Size - 1)
+	x := newRng(Size)
 	for i := 0; i < len(Randtab); i++ {
 		Randtab[i] = x.next()
 	}
@@ -153,30 +156,27 @@ func cm(mask uint32) uint32 {
 	return mask
 }
 
-func newCtr(mask uint32) seq { return &ctr{^uint32(0), cm(mask)} }
-func newMem(mask uint32) seq { return &mem{^uint32(0), cm(mask)} }
-func newXor(mask uint32) seq { return &xorshift32{uint32(time.Now().Unix()), cm(mask)} } // prime
+func newCtr(max uint32) seq { return &ctr{^uint32(0), cm(max - 1)} }
+func newMem(max uint32) seq { return &mem{^uint32(0), cm(max - 1)} }
+func newRng(max uint32) seq { return &rng{rand.New(rand.NewSource(time.Now().UnixNano())), max} }
 
 type ctr struct {
 	int  uint32
 	mask uint32
 }
-type xorshift32 struct {
-	v    uint32
-	mask uint32
+type rng struct {
+	*rand.Rand
+	max uint32
 }
 
 func (c *ctr) next() int {
 	c.int++
 	return int(c.int & c.mask)
 }
-func (x *xorshift32) next() int {
-	x.v ^= x.v << 13
-	x.v ^= x.v >> 17
-	x.v ^= x.v << 5
-	return int(x.v & x.mask)
+func (x *rng) next() int {
+	return x.Rand.Intn(int(x.max))
 }
 
-func (m mem) String() string        { return fmt.Sprintf("Memo/Mask%x", m.mask) }
-func (x xorshift32) String() string { return fmt.Sprintf("Rand/Mask%x", x.mask) }
-func (c ctr) String() string        { return fmt.Sprintf("Incr/Mask%x", c.mask) }
+func (m mem) String() string { return fmt.Sprintf("Memo/Mask%x", m.mask) }
+func (r rng) String() string { return fmt.Sprintf("Rand/Mask%x", r.max-1) }
+func (c ctr) String() string { return fmt.Sprintf("Incr/Mask%x", c.mask) }
