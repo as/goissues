@@ -21,7 +21,21 @@ func hammer(c Cache, done chan bool) {
 		default:
 		}
 		v := r.next()
-		c.Put(v, v)
+		if v&3 == 0 {
+			// happens with probability 1/8 (~13%)
+			c.Put(v, v)
+		}
+	}
+}
+func getter(c Cache, done chan bool) {
+	r := newXor(Size)
+	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+		c.Get(r.next())
 	}
 }
 
@@ -65,6 +79,11 @@ func BenchmarkMap(b *testing.B) {
 				for i := 0; i < w; i++ {
 					// Mutate the cache as dictated by the outermost loop
 					go hammer(c, done)
+
+					// Add 10 readers for every writer
+					for i := 0; i < 10; i++ {
+						go getter(c, done)
+					}
 				}
 
 				// Start with a narrow access window, expand the mask
@@ -72,7 +91,7 @@ func BenchmarkMap(b *testing.B) {
 				// iterations will be localized and expand as 'e' grows
 				for e := uint(0); e <= E; e += k {
 					ctr := ctrFunc((1 << e) - 1)
-					b.Run(fmt.Sprintf("%dWriter/%s/%s", w, nm, ctr), func(b *testing.B) {
+					b.Run(fmt.Sprintf("%dW%dR/%s/%s", w, w*10+1, nm, ctr), func(b *testing.B) {
 						for n := 0; n < b.N; n++ {
 							c.Get(ctr.next())
 						}
