@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 const (
@@ -104,7 +105,7 @@ func (c *ctr) next() int {
 	return int(c.int & c.mask)
 }
 
-func newXor(mask uint32) seq { return &xorshift32{16777213, mask} } // prime
+func newXor(mask uint32) seq { return &xorshift32{uint32(time.Now().UnixNano()), mask} } // prime
 func (x *xorshift32) next() int {
 	x.v ^= x.v << 13
 	x.v ^= x.v >> 17
