@@ -24,8 +24,30 @@ func hammer(c Cache, done chan bool) {
 	}
 }
 
+func TestMap(t *testing.T) {
+	t.Skip("usability test skipped")
+	l := newLC(Size)
+	s := newSC(Size)
+	l.Put(4, 4)
+	if l.Get(4) != 4 {
+		t.Fatal("l 4!=4")
+	}
+	s.Put(4, 4)
+	if s.Get(4) != 4 {
+		t.Fatal("s 4!=4")
+	}
+	done := make(chan bool)
+	for i := 0; i < 10; i++ {
+		go hammer(l, done)
+		go hammer(s, done)
+	}
+	defer close(done)
+	for i := 0; i < 1024*10; i++ {
+		l.Get(i * 65537)
+		s.Get(i * 65537)
+	}
+}
 func BenchmarkMap(b *testing.B) {
-
 	const k = 4 // skip by 2^4
 
 	for w := 0; w <= maxWriter; w++ {
