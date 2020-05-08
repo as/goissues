@@ -1,0 +1,6 @@
+main.go
+go run -a main.go
+g errTooMuch
+https://golang.org/issue/35503
+/go/src/image/gif/reader.go:/errTooMuch/
+/tmp/45f1ef3434927e87e48e53989815504972086484.unknown.gif
